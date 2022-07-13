@@ -10,18 +10,27 @@
 
 #include "Shader.h"
 #include "Primitive.h"
+#include "ShapeGen.h"
+#include "OrbitCamera.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
-void generateCube(float size, glm::vec3 color, MeshData& meshData);
-void generateSphere(float radius, int numSlices, glm::vec3 color, MeshData& meshData);
-void generateCone(float radius, float height, int numSlices, glm::vec3 color, MeshData& meshData);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void mouse_scroll_callback(GLFWwindow* window, double xOffset, double yOffset);
 
 // settings
 const unsigned int SCR_WIDTH = 1080;
 const unsigned int SCR_HEIGHT = 720;
 
-float PI = 3.1415926535f;
+//Camera
+const float mouseSensitivity = 0.01f;
+const float scrollSensitivity = 0.1f;
+const bool mouseInvertX = false, mouseInvertY = true;
+float prevMouseX = SCR_WIDTH/2, prevMouseY = SCR_HEIGHT/2;
+bool firstMouse = true;
+
+OrbitCamera camera = OrbitCamera(glm::vec3(0, 0, 0), 45, 3.0f, 6.0f);
 
 int main()
 {
@@ -53,11 +62,14 @@ int main()
     std::cout << glGetString(GL_VERSION) << std::endl;
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetScrollCallback(window, mouse_scroll_callback);
 
     Shader shader = Shader("shaders/vertex.glsl", "shaders/fragment.glsl");
 
     MeshData cubeMesh;
-    generateCube(0.5f, glm::vec3(1.0f, 1.0f, 1.0f), cubeMesh);
+    generateCube(0.5f, glm::vec3(1.0f, 1.0f, 0.0f), cubeMesh);
 
     MeshData sphereMesh;
     generateSphere(0.5f, 10, glm::vec3(1.0f, 0.0f, 1.0f), sphereMesh);
@@ -65,9 +77,9 @@ int main()
     MeshData coneMesh;
     generateCone(0.5f, 1.0f, 10, glm::vec3(0.0f, 1.0f, 1.0f), coneMesh);
 
-    Primitive* sphere = new Primitive(&sphereMesh);
-    Primitive* cube = new Primitive(&cubeMesh);
-    Primitive* cone = new Primitive(&coneMesh);
+    Primitive sphere = Primitive(&sphereMesh);
+    Primitive cube = Primitive(&cubeMesh);
+    Primitive cone = Primitive(&coneMesh);
 
     //Before drawing, tell which shader to use and bind VAO
     shader.use();
@@ -75,12 +87,8 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    //Move camera back
-    glm::mat4 view = glm::mat4(1.0f);
-    view = glm::translate(view,glm::vec3(0.0f, 0.0f, -2.0f));
-
-    float fov = 55.0f;
-    glm::mat4 projection = glm::perspective(fov, (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+    camera.setAzimuth(PI / 2);
+    glm::mat4 projection = glm::perspective(camera.getFov(), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
     //Render loop
     while (!glfwWindowShouldClose(window))
@@ -90,8 +98,8 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glm::mat4 view = camera.getViewMatrix();
         float time = (float)glfwGetTime();
-
         //Note that view and projection are shared across all our objects. There is only 1 camera!
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
@@ -102,7 +110,7 @@ int main()
         model = glm::rotate(model, time * 0.2f, glm::vec3(-0.5, 0.2f, 0.0f));
         model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
         shader.setMat4("model", model);
-        cube->Draw();
+        cube.Draw();
 
         //Draw transformed sphere
         model = glm::mat4(1.0f);
@@ -110,7 +118,7 @@ int main()
         model = glm::rotate(model, time * 0.2f, glm::vec3(0.5, 0.2f, 0.0f));
         model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
         shader.setMat4("model", model);
-        sphere->Draw();
+        sphere.Draw();
 
         //Draw transformed cone
         model = glm::mat4(1.0f);
@@ -118,13 +126,12 @@ int main()
         model = glm::rotate(model, time * 0.2f, glm::vec3(-0.5, 0.2f, 0.0f));
         model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
         shader.setMat4("model", model);
-        cone->Draw();
+        cone.Draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    delete sphere;
     glfwTerminate();
     return 0;
 }
@@ -140,160 +147,40 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glViewport(0, 0, width, height);
 }
 
-void generateCube(float size, glm::vec3 color, MeshData& meshData) {
-    //VERTICES
-    //-------------
-    Vertex vertices[8] = {
-        {glm::vec3(-size, -size, -size),color},
-        {glm::vec3(-size, +size, -size),color},
-        {glm::vec3(+size, +size, -size),color},
-        {glm::vec3(+size, -size, -size),color},
-        {glm::vec3(-size, -size, +size),color},
-        {glm::vec3(-size, +size, +size),color},
-        {glm::vec3(+size, +size, +size),color},
-        {glm::vec3(+size, -size, +size),color}
-    };
-    meshData.vertices.assign(&vertices[0], &vertices[8]);
-
-    //INDICES
-    //-------------
-
-    unsigned int indices[36] = {
-        // front face
-        0, 1, 2,
-        0, 2, 3,
-
-        // back face
-        4, 6, 5,
-        4, 7, 6,
-
-        // left face
-        4, 5, 1,
-        4, 1, 0,
-
-        // right face
-        3, 2, 6,
-        3, 6, 7,
-
-        // top face
-        1, 5, 6,
-        1, 6, 2,
-
-        // bottom face
-        4, 0, 3,
-        4, 3, 7
-    };
-    meshData.indices.assign(&indices[0], &indices[36]);
-}
-
-void generateSphere(float radius, int numSlices, glm::vec3 color, MeshData& meshData) {
-
-    //VERTICES
-    //-------------
-
-    Vertex topVertex = { glm::vec3(0,radius,0), color };
-    meshData.vertices.push_back(topVertex);
-
-    float phiStep = PI / (float)numSlices;
-    float thetaStep = 2.0f * PI / numSlices;
-
-    for (int i = 1; i <= numSlices - 1; ++i)
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    float xPosf = (float)xpos, yPosf = (float)ypos;
+    if (firstMouse)
     {
-        float phi = i * phiStep;
-
-        // Vertices of ring.
-        for (int j = 0; j <= numSlices; ++j)
-        {
-            float theta = j * thetaStep;
-
-            float x = radius * sinf(phi) * cosf(theta);
-            float y = radius * cosf(phi);
-            float z = radius * sinf(phi) * sinf(theta);
-
-            Vertex vertex = { glm::vec3(x, y, z), color };
-            meshData.vertices.push_back(vertex);
-        }
+        prevMouseX = xPosf;
+        prevMouseY = yPosf;
+        firstMouse = false;
     }
-    Vertex bottomVertex = { glm::vec3(0, -radius, 0), color };
-    meshData.vertices.push_back(bottomVertex);
+    float xoffset = xPosf - prevMouseX;
+    float yoffset = prevMouseY - yPosf;
+    prevMouseX = xPosf;
+    prevMouseY = yPosf;
 
-    //INDICES
-    // -----------------------
-   
-    //Connects top pole to first ring
-    for (int i = 1; i <= numSlices; ++i)
-    {
-        meshData.indices.push_back(0);
-        meshData.indices.push_back(i + 1);
-        meshData.indices.push_back(i);
-    }
+    xoffset *= mouseSensitivity * (mouseInvertX ? -1 : 1);
+    yoffset *= mouseSensitivity * (mouseInvertY ? -1 : 1);
 
-    unsigned int baseIndex = 1;
-    unsigned int ringVertexCount = numSlices + 1;
-    for (int i = 0; i < numSlices - 2; ++i)
-    {
-        for (int j = 0; j < numSlices; ++j)
-        {
-            meshData.indices.push_back(baseIndex + i * ringVertexCount + j);
-            meshData.indices.push_back(baseIndex + i * ringVertexCount + j + 1);
-            meshData.indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
-
-            meshData.indices.push_back(baseIndex + (i + 1) * ringVertexCount + j);
-            meshData.indices.push_back(baseIndex + i * ringVertexCount + j + 1);
-            meshData.indices.push_back(baseIndex + (i + 1) * ringVertexCount + j + 1);
-        }
-    }
-    unsigned int southPoleIndex = (unsigned int)meshData.vertices.size() - 1;
-
-    // Offset the indices to the index of the first vertex in the last ring.
-    baseIndex = southPoleIndex - ringVertexCount;
-
-    for (int i = 0; i < southPoleIndex; ++i)
-    {
-        meshData.indices.push_back(southPoleIndex);
-        meshData.indices.push_back(baseIndex + i);
-        meshData.indices.push_back(baseIndex + i + 1);
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+        camera.rotate(xoffset, yoffset);
     }
 }
 
-void generateCone(float radius, float height, int numSlices, glm::vec3 color, MeshData& meshData) {
-
-    //VERTICES
-    //---------------
-
-    unsigned int baseIndex = 0; 
-    float baseY = -0.5f * height;
-    float topY = 0.5f * height;
-    float theta = 2.0f * PI / numSlices;
-    for (int i = 0; i <= numSlices; ++i)
-    {
-        float x = radius * cosf(i * theta);
-        float z = radius * sinf(i * theta);
-        Vertex vertex = { glm::vec3(x, baseY, z), color };
-        meshData.vertices.push_back(vertex);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (action == GLFW_PRESS) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+        else if (action == GLFW_RELEASE) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
     }
-    //Center of bottom
-    Vertex centerVertex = { glm::vec3(0, baseY, 0), color };
-    meshData.vertices.push_back(centerVertex);
+}
 
-    //Top
-    Vertex topVertex = { glm::vec3(0, topY, 0), color };
-    meshData.vertices.push_back(topVertex);
-
-    //INDICES
-    //----------
-    unsigned int centerIndex = (unsigned int)meshData.vertices.size() - 2;
-    unsigned int topIndex = (unsigned int)meshData.vertices.size() - 1;
-
-    for (int i = 0; i < numSlices; ++i)
-    {
-        meshData.indices.push_back(centerIndex);
-        meshData.indices.push_back(baseIndex + i);
-        meshData.indices.push_back(baseIndex + i + 1);
-
-        meshData.indices.push_back(topIndex);
-        meshData.indices.push_back(baseIndex + i);
-        meshData.indices.push_back(baseIndex + i + 1);
-    }
-
+void mouse_scroll_callback(GLFWwindow* window, double xOffset, double yOffset)
+{
+    camera.zoom(-(float)yOffset * scrollSensitivity);
 }

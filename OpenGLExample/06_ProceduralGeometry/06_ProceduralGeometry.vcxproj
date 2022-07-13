@@ -160,12 +160,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\OrbitCamera.cpp" />
     <ClCompile Include="src\Primitive.cpp" />
     <ClCompile Include="src\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\OrbitCamera.h" />
     <ClInclude Include="src\Primitive.h" />
     <ClInclude Include="src\Shader.h" />
+    <ClInclude Include="src\ShapeGen.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
