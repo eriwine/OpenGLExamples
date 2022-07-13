@@ -161,7 +161,6 @@ int main()
     shader.use();
     glBindVertexArray(VAO);
     glEnable(GL_DEPTH_TEST);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glm::mat4 view = glm::mat4(1.0f);
     view = translate(glm::vec3(0.0f, 0.0f, -3.0f));
