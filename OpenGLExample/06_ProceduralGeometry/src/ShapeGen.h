@@ -2,7 +2,8 @@
 #include "Primitive.h"
 #include <glm/glm.hpp>
 
-float PI = 3.1415926535f;
+const float PI = 3.1415926535f;
+const float PI2 = PI * 2;
 
 void generateCube(float size, glm::vec3 color, MeshData& meshData) {
     //VERTICES
@@ -160,4 +161,61 @@ void generateCone(float radius, float height, int numSlices, glm::vec3 color, Me
         meshData.indices.push_back(baseIndex + i + 1);
     }
 
+}
+
+
+void generateTorus(float outRadius, float inRadius, int outFacetsNum, int inFacetsNum, glm::vec3 color, MeshData& meshData) {
+
+    float radius = outRadius; //Large disc radius 
+    float ringRadius = outRadius - inRadius; //Radius of the tube ring
+
+    int numVerticesPerRow = inFacetsNum + 1;
+    int numVerticesPerColumn = outFacetsNum + 1;
+
+    int numVertices = numVerticesPerRow * numVerticesPerColumn;
+
+    float theta = 0.0f;
+    float phi = 0.0f;
+
+    float verticalAngularStride = PI2 / outFacetsNum;
+    float horizontalAngularStride = PI2 / inFacetsNum;
+
+    for (int verticalIt = 0; verticalIt < numVerticesPerColumn; verticalIt++)
+    {
+        theta = verticalAngularStride * verticalIt;
+        for (int horizontalIt = 0; horizontalIt < numVerticesPerRow; horizontalIt++)
+        {
+            phi = horizontalAngularStride * horizontalIt;
+            //position
+            float x = cos(theta) * (radius + ringRadius * cos(phi));
+            float y = sin(theta) * (radius + ringRadius * cos(phi));
+            float z = ringRadius * sin(phi);
+
+            Vertex vertex = { glm::vec3(x,y,z), color };
+            meshData.vertices.push_back(vertex);
+        }
+    }
+    int numIndices = inFacetsNum * outFacetsNum * 6;
+
+    //INDICES
+    //------------
+
+    for (int verticalIt = 0; verticalIt < outFacetsNum; verticalIt++)
+    {
+        for (int horizontalIt = 0; horizontalIt < inFacetsNum; horizontalIt++)
+        {
+            unsigned int lt = horizontalIt + verticalIt * numVerticesPerRow;
+            unsigned int rt = (horizontalIt + 1) + verticalIt * numVerticesPerRow;
+            unsigned int lb = horizontalIt + (verticalIt + 1) * numVerticesPerRow;
+            unsigned int rb = (horizontalIt + 1) + (verticalIt + 1) * numVerticesPerRow;
+
+            meshData.indices.push_back(lt);
+            meshData.indices.push_back(rt);
+            meshData.indices.push_back(lb);
+
+            meshData.indices.push_back(rt);
+            meshData.indices.push_back(rb);
+            meshData.indices.push_back(lb);
+        }
+    }
 }

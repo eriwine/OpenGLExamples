@@ -77,9 +77,13 @@ int main()
     MeshData coneMesh;
     generateCone(0.5f, 1.0f, 10, glm::vec3(0.0f, 1.0f, 1.0f), coneMesh);
 
+    MeshData torusMesh;
+    generateTorus(0.5f, 0.25f, 10, 10, glm::vec3(1.0f, 1.0f, 1.0f), torusMesh);
+
     Primitive sphere = Primitive(&sphereMesh);
     Primitive cube = Primitive(&cubeMesh);
     Primitive cone = Primitive(&coneMesh);
+    Primitive torus = Primitive(&torusMesh);
 
     //Before drawing, tell which shader to use and bind VAO
     shader.use();
@@ -127,6 +131,14 @@ int main()
         model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
         shader.setMat4("model", model);
         cone.Draw();
+
+        //Draw transformed torus
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(2.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, time * 0.2f, glm::vec3(-0.5, 0.2f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+        shader.setMat4("model", model);
+        torus.Draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
