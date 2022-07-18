@@ -10,15 +10,15 @@ void generateCube(float size, glm::vec3 color, MeshData& meshData) {
     //-------------
     Vertex vertices[24] = {
         //Front face
-        {glm::vec3(-size, -size, -size),color,glm::vec3(0.0f,0.0f,1.0f)},
-        {glm::vec3(-size, +size, -size),color,glm::vec3(0.0f,0.0f,1.0f)},
-        {glm::vec3(+size, +size, -size),color,glm::vec3(0.0f,0.0f,1.0f)},
-        {glm::vec3(+size, -size, -size),color,glm::vec3(0.0f,0.0f,1.0f)},
+        {glm::vec3(-size, -size, -size),color,glm::vec3(0.0f,0.0f,-1.0f)},
+        {glm::vec3(-size, +size, -size),color,glm::vec3(0.0f,0.0f,-1.0f)},
+        {glm::vec3(+size, +size, -size),color,glm::vec3(0.0f,0.0f,-1.0f)},
+        {glm::vec3(+size, -size, -size),color,glm::vec3(0.0f,0.0f,-1.0f)},
         //Back face
-        {glm::vec3(-size, -size, +size),color,glm::vec3(0.0f,0.0f,-1.0f)},
-        {glm::vec3(+size, -size, +size),color,glm::vec3(0.0f,0.0f,-1.0f)},
-        {glm::vec3(+size, +size, +size),color,glm::vec3(0.0f,0.0f,-1.0f)},
-        {glm::vec3(-size, +size, +size),color,glm::vec3(0.0f,0.0f,-1.0f)},
+        {glm::vec3(-size, -size, +size),color,glm::vec3(0.0f,0.0f,1.0f)},
+        {glm::vec3(+size, -size, +size),color,glm::vec3(0.0f,0.0f,1.0f)},
+        {glm::vec3(+size, +size, +size),color,glm::vec3(0.0f,0.0f,1.0f)},
+        {glm::vec3(-size, +size, +size),color,glm::vec3(0.0f,0.0f,1.0f)},
         //Top face
         {glm::vec3(-size, +size, -size),color,glm::vec3(0.0f,1.0f,0.0f)},
         {glm::vec3(-size, +size, +size),color,glm::vec3(0.0f,1.0f,0.0f)},

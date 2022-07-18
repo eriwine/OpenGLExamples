@@ -67,6 +67,7 @@ int main()
     glfwSetScrollCallback(window, mouse_scroll_callback);
 
     Shader shader = Shader("shaders/vertex.glsl", "shaders/fragment.glsl");
+    Shader lightShader = Shader("shaders/vertex.glsl", "shaders/lightFragment.glsl");
 
     MeshData cubeMesh;
     generateCube(0.5f, glm::vec3(1,0,1), cubeMesh);
@@ -77,8 +78,6 @@ int main()
     Primitive sphere = Primitive(&sphereMesh);
     Primitive cube = Primitive(&cubeMesh);
 
-    //Before drawing, tell which shader to use and bind VAO
-    shader.use();
 
     glEnable(GL_DEPTH_TEST);
 
@@ -100,14 +99,30 @@ int main()
         glm::mat4 view = camera.getViewMatrix();
         float time = (float)glfwGetTime();
 
-        //Note that view and projection are shared across all our objects. There is only 1 camera!
+        lightPos = glm::vec3(cos(time) * 2, 1, sin(time)*2);
+        //Use lightShader to render light
+        lightShader.use();
+        lightShader.setMat4("view", view);
+        lightShader.setMat4("projection", projection);
+        lightShader.setVec3("lightColor", lightColor);
+
+        //Draw light as small sphere at lightPos
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.1f, 0.1f, 0.1f));
+        lightShader.setMat4("model", model);
+        sphere.Draw();
+
+        //Switch to our shader for rest of the shapes
+        shader.use();
         shader.setMat4("view", view);
         shader.setMat4("projection", projection);
         shader.setVec3("lightPos", lightPos);
         shader.setVec3("lightColor", lightColor);
         shader.setVec3("eyePos", camera.getEyePos());
+
         //Draw transformed cube
-        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, time * 0.2f, glm::vec3(-0.5, 0.2f, 0.0f));
         model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
@@ -121,7 +136,6 @@ int main()
         model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
         shader.setMat4("model", model);
         sphere.Draw();
-
 
         glfwSwapBuffers(window);
         glfwPollEvents();
