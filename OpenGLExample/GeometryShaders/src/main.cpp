@@ -28,7 +28,7 @@ float randomRange(float min, float max)
 
 void randomizeParticles() {
 
-    for (size_t i = 0; i < NUM_PARTICLES; i++)
+    for (unsigned int i = 0; i < NUM_PARTICLES; i++)
     {
         unsigned int startIndex = i * VERTEX_STRIDE;
         vertices[startIndex] = randomRange(-0.5, 0.5);
