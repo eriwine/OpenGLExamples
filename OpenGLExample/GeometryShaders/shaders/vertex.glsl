@@ -1,9 +1,9 @@
 #version 450 core
 //The layout here must match the vertex attributes defined in main.cpp
 layout (location = 0) in vec3 aPos; //Position
-layout (location = 1) in vec3 aColor; //Color
+layout (location = 1) in vec4 aColor; //Color
 
-out vec3 ourColor;
+out vec4 ourColor;
 
 void main()
 {

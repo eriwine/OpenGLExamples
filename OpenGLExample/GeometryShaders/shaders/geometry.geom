@@ -3,8 +3,8 @@
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
-in vec3 ourColor[];
-out vec3 vertexColor;
+in vec4 ourColor[];
+out vec4 vertexColor;
 out vec2 texCoord;
 
 //Uniforms would also go here and be passed through

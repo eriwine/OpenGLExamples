@@ -4,6 +4,18 @@
 #include <iostream>
 #include "Shader.h"
 
+struct Vec3 {
+    float x, y, z;
+};
+
+struct Vec4 {
+    float x, y, z, w;
+};
+
+struct Vertex {
+    Vec3 position;
+    Vec4 color;
+};
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -12,9 +24,12 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 1080;
 const unsigned int SCR_HEIGHT = 720;
 const unsigned int NUM_PARTICLES = 100;
-const unsigned int VERTEX_STRIDE = 6;
+const unsigned int VERTEX_STRIDE = 7;
 const unsigned int VERTEX_BUFFER_SIZE = NUM_PARTICLES * VERTEX_STRIDE;
-float vertices[VERTEX_BUFFER_SIZE];
+
+
+Vertex vertices[NUM_PARTICLES];
+float vertexBuffer[NUM_PARTICLES * sizeof(Vertex)];
 
 float deltaTime, lastFrameTime;
 
@@ -30,14 +45,12 @@ void randomizeParticles() {
 
     for (unsigned int i = 0; i < NUM_PARTICLES; i++)
     {
-        unsigned int startIndex = i * VERTEX_STRIDE;
-        vertices[startIndex] = randomRange(-0.5, 0.5);
-        vertices[startIndex + 1] = randomRange(-0.5, 0.5);
-        vertices[startIndex + 2] = 0;
-        vertices[startIndex + 3] = 1.0f;
-        vertices[startIndex + 4] = 1.0f;
-        vertices[startIndex + 5] = 1.0f;
+        vertices[i].position = { randomRange(-0.5, 0.5), randomRange(-0.5,0.5), 0.0 };
+        vertices[i].color = { 1.0f, 1.0f, 1.0f, 1.0f };
     }
+    memcpy(vertexBuffer, vertices, NUM_PARTICLES * sizeof(Vertex));
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 }
 
 int main()
@@ -83,14 +96,14 @@ int main()
     //Bind Vertex Buffer Object to VAO
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     //Fill VBO with vertex data
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STREAM_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
 
     //Set vertex attributes pointers.
     //Positions
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     //Colors starting at offset of 12 bytes
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
    
     //Before drawing, tell which shader to use and bind VAO
@@ -110,6 +123,18 @@ int main()
         lastFrameTime = currentTime;
 
         processInput(window);
+
+        for (unsigned int i = 0; i < NUM_PARTICLES; i++)
+        {
+            float x = vertices[i].position.x;
+            x += deltaTime * 0.5;
+            if (x > 1)
+                x = -1;
+            vertices[i].position.x = x;
+        }
+        memcpy(vertexBuffer, vertices, NUM_PARTICLES * sizeof(Vertex));
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 
         //Draw
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -133,8 +158,6 @@ void processInput(GLFWwindow* window)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         randomizeParticles();
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
     }
 }
 
