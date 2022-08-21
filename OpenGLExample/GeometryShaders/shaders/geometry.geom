@@ -1,13 +1,16 @@
 #version 450 core
 
+//Takes in a single point and outputs 4 vertices
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
+//Passed from vertex shader
 in vec4 ourColor[];
+
+//Passed to fragment shader
 out vec4 vertexColor;
 out vec2 texCoord;
 
-//Uniforms would also go here and be passed through
 uniform float size;
 
 void main(void){
@@ -35,3 +38,4 @@ void main(void){
 	}
 	EndPrimitive();
 }
+

@@ -27,13 +27,11 @@ const unsigned int NUM_PARTICLES = 100;
 const unsigned int VERTEX_STRIDE = 7;
 const unsigned int VERTEX_BUFFER_SIZE = NUM_PARTICLES * VERTEX_STRIDE;
 
-
 Vertex vertices[NUM_PARTICLES];
-float vertexBuffer[NUM_PARTICLES * sizeof(Vertex)];
 
 float deltaTime, lastFrameTime;
 
-unsigned int VBO;
+unsigned int quadVBO;
 
 float randomRange(float min, float max)
 {
@@ -48,8 +46,8 @@ void randomizeParticles() {
         vertices[i].position = { randomRange(-0.5, 0.5), randomRange(-0.5,0.5), 0.0 };
         vertices[i].color = { 1.0f, 1.0f, 1.0f, 1.0f };
     }
-    memcpy(vertexBuffer, vertices, NUM_PARTICLES * sizeof(Vertex));
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+   // memcpy(vertexBuffer, vertices, NUM_PARTICLES * sizeof(Vertex));
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 }
 
@@ -88,13 +86,13 @@ int main()
     glGenVertexArrays(1, &VAO);
 
     //Create Vertex Buffer Object
-    glGenBuffers(1, &VBO);
+    glGenBuffers(1, &quadVBO);
 
 
     //Bind Vertex Array Object
     glBindVertexArray(VAO);
     //Bind Vertex Buffer Object to VAO
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
     //Fill VBO with vertex data
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
 
@@ -132,8 +130,8 @@ int main()
                 x = -1;
             vertices[i].position.x = x;
         }
-        memcpy(vertexBuffer, vertices, NUM_PARTICLES * sizeof(Vertex));
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
 
         //Draw
