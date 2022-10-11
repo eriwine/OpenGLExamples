@@ -5,6 +5,7 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 // settings
 const unsigned int SCR_WIDTH = 1080;
@@ -22,17 +23,21 @@ unsigned int indices[] = {
 };
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
+"uniform float iTime;\n"
 "void main()\n"
 "{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"   gl_Position = vec4(aPos.x, aPos.y + sin(aPos.x + iTime * 4.0)*0.2, aPos.z, 1.0);\n"
 "}\0";
 
 const char* fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
+"uniform float iTime; \n"
 "void main()\n"
 "{\n"
-"   FragColor = vec4(1.0f,1.0f,1.0f,1.0f);\n"
+"   FragColor = vec4(abs(sin(iTime * 4.0)));\n"
 "}\0";
+
+bool wireframe = false;
 
 int main()
 {
@@ -64,7 +69,7 @@ int main()
     std::cout << glGetString(GL_VERSION) << std::endl;
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
+    glfwSetKeyCallback(window, keyboard_callback);
 
     //Create + compile vertex shader
     unsigned int vertexShader;
@@ -133,8 +138,7 @@ int main()
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO);
 
-    //Use wireframe mode
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  
 
     //Render loop
     while (!glfwWindowShouldClose(window))
@@ -143,6 +147,12 @@ int main()
 
         glClearColor(0.1f, 0.2f, 0.5f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        //Use wireframe mode
+        glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
+
+        float time = (float)glfwGetTime();
+        glUniform1f(glGetUniformLocation(shaderProgram, "iTime"), time);
 
         //Draw geometry
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -162,6 +172,13 @@ void processInput(GLFWwindow* window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+}
+
+void keyboard_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+        wireframe = !wireframe;
+    }
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)

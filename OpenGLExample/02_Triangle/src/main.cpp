@@ -11,12 +11,15 @@ const unsigned int SCR_WIDTH = 1080;
 const unsigned int SCR_HEIGHT = 720;
 
 float vertices[] = {
-    -0.5f, -0.5f, 0.0f,
-     0.5f, -0.5f, 0.0f,
-     0.0f,  0.5f, 0.0f
+        // first triangle
+        -0.5f,-0.5f,0.0f, //bottom left
+        0.5f,0.5f,0.0f,   //top right
+        -0.5f,0.5f,0.0f,  //top left
+        // second triangle
+        -0.5f,-0.5f,0.0f, //bottom left
+        0.5f,-0.5f,0.0f, //bottom right
+        0.5f,0.5f,0.0f //top right
 };
-
-
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
 "void main()\n"
@@ -122,7 +125,8 @@ int main()
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO);
 
-    glPointSize(40.0f);
+    //Use wireframe mode
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     //Render loop
     while (!glfwWindowShouldClose(window))
     {
@@ -132,7 +136,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         //Draw geometry
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
