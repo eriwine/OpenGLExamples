@@ -1,6 +1,7 @@
 #version 330 core
 out vec4 FragColor;
 
+in vec3 Color;
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 WorldPosition;
@@ -14,6 +15,10 @@ uniform vec3 u_cameraPos;
 uniform vec3 u_lightColor;
 uniform vec3 u_lightPos;
 uniform vec2 u_tile;
+uniform float u_shininess = 32;
+float ambientK = 0.3;
+float diffuseK = 0.7;
+float specularK = 0.3;
 
 //Returns 1 if out of shadow, 0 if in shadow
 float calculateShadow(vec4 lightSpacePos){
@@ -28,7 +33,7 @@ float calculateShadow(vec4 lightSpacePos){
     vec3 normal = normalize(Normal);
     vec3 lightDir = normalize(u_lightPos - WorldPosition);
 
-    float bias = max(0.02 * (1.0 - dot(normal,lightDir)),0.002);
+    float bias = max(0.01 * (1.0 - dot(normal,lightDir)),0.001);
 
     //PCF filtering
     float shadow = 0.0;
@@ -51,24 +56,23 @@ float calculateShadow(vec4 lightSpacePos){
 
 void main()
 {
-    vec3 shadowColor = vec3(0.5,0.6,1.0);
     vec3 textureColor = texture(u_texture,TexCoords * u_tile).rgb;
-    float ambientK = 0.25;
-    vec3 ambient = textureColor * shadowColor * ambientK;
 
     vec3 lightDir = normalize(u_lightPos - WorldPosition);
+
+    //Ambient
+    vec3 ambient = u_lightColor * ambientK;
 
     //Diffuse
     vec3 worldNorm = normalize(Normal);
     float diffuseFactor = max(dot(worldNorm,lightDir),0);
-    vec3 diffuse = textureColor * u_lightColor * diffuseFactor;
+    vec3 diffuse = u_lightColor * diffuseFactor * diffuseK;
 
     //Specular
-    float specularK = 0.2;
     vec3 viewDir = normalize(u_cameraPos - WorldPosition);
     vec3 reflectDir = reflect(-lightDir,worldNorm);
     vec3 halfwayDir = normalize(lightDir + viewDir);
-    float specFactor = pow(max(dot(worldNorm,halfwayDir),0.0),16);
+    float specFactor = pow(max(dot(worldNorm,halfwayDir),0.0),u_shininess);
     vec3 specular = u_lightColor * specFactor * specularK;
      
     vec3 toCamera = normalize(WorldPosition - u_cameraPos);
@@ -77,6 +81,6 @@ void main()
 
     float shadow = calculateShadow(LightSpacePosition);
     
-    vec3 col = (ambient + ((1.0-shadow) * (diffuse + specular)));
+    vec3 col = textureColor * (ambient + ((1.0-shadow) * (diffuse + specular)));
     FragColor = vec4(col,1.0f);
 }

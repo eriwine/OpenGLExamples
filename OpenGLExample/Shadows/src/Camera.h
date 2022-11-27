@@ -51,7 +51,7 @@ private:
 
 	float m_fov = 60.0f;
 	float m_aspectRatio = 16.0f / 9.0f;
-	float m_nearPlane = 0.1f;
+	float m_nearPlane = 0.001f;
 	float m_farPlane = 1000.0f;
 	glm::vec3 m_worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
 };

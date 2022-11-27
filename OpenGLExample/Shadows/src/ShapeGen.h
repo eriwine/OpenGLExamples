@@ -5,20 +5,100 @@
 const float PI = 3.1415926535f;
 const float PI2 = PI * 2;
 
-void generateCube(float size, glm::vec3 color, MeshData& meshData) {
+void createQuad(float width, float height, glm::vec3 color, MeshData* meshData) {
+    meshData->vertices.clear();
+    meshData->indices.clear();
+
+    float halfWidth = width * 0.5f;
+    float halfHeight = height * 0.5f;
+
+    Vertex vertices[4] = {
+        {glm::vec3(-halfWidth,-halfHeight,0.0f),color,glm::vec3(0.0f,0.0f,1.0f),glm::vec2(0.0f,0.0f)},
+        {glm::vec3(+halfWidth,-halfHeight,0.0f),color,glm::vec3(0.0f,0.0f,1.0f),glm::vec2(1.0f,0.0f)},
+        {glm::vec3(+halfWidth,+halfHeight,0.0f),color,glm::vec3(0.0f,0.0f,1.0f),glm::vec2(1.0f,1.0f)},
+        {glm::vec3(-halfWidth,+halfHeight,0.0f),color,glm::vec3(0.0f,0.0f,1.0f),glm::vec2(0.0f,1.0f)}
+    };
+    meshData->vertices.assign(&vertices[0], &vertices[4]);
+
+    GLushort indices[] = {
+        0, 1, 2,
+        2, 3, 0
+    };
+    meshData->indices.assign(&indices[0], &indices[6]);
+}
+
+
+void createPlane(float width, float height, glm::vec3 color, MeshData* meshData) {
+    meshData->vertices.clear();
+    meshData->indices.clear();
+
+    float halfWidth = width * 0.5f;
+    float halfHeight = height * 0.5f;
+
+    Vertex vertices[4] = {
+        {glm::vec3(-halfWidth,0.0f,-halfHeight),color,glm::vec3(0.0f,1.0f,0.0f),glm::vec2(0.0f,0.0f)},
+        {glm::vec3(+halfWidth,0.0f,-halfHeight),color,glm::vec3(0.0f,1.0f,0.0f),glm::vec2(1.0f,0.0f)},
+        {glm::vec3(+halfWidth,0.0f,+halfHeight),color,glm::vec3(0.0f,1.0f,0.0f),glm::vec2(1.0f,1.0f)},
+        {glm::vec3(-halfWidth,0.0f,+halfHeight),color,glm::vec3(0.0f,1.0f,0.0f),glm::vec2(0.0f,1.0f)}
+    };
+    meshData->vertices.assign(&vertices[0], &vertices[4]);
+
+    GLushort indices[] = {
+        0, 2, 1,
+        0, 3, 2
+    };
+    meshData->indices.assign(&indices[0], &indices[6]);
+}
+
+void createCube(float width, float height, float depth, glm::vec3 color, MeshData* meshData)
+{
+    meshData->vertices.clear();
+    meshData->indices.clear();
+
+    float halfWidth = width / 2.0f;
+    float halfHeight = height / 2.0f;
+    float halfDepth = depth / 2.0f;
+
     //VERTICES
     //-------------
-    Vertex vertices[8] = {
-        {glm::vec3(-size, -size, -size),color},
-        {glm::vec3(-size, +size, -size),color},
-        {glm::vec3(+size, +size, -size),color},
-        {glm::vec3(+size, -size, -size),color},
-        {glm::vec3(-size, -size, +size),color},
-        {glm::vec3(-size, +size, +size),color},
-        {glm::vec3(+size, +size, +size),color},
-        {glm::vec3(+size, -size, +size),color}
+    Vertex vertices[24] = {
+        //Front face
+        {glm::vec3(-halfWidth, -halfHeight, +halfDepth), color, glm::vec3(0,0,1), glm::vec2(0,0)}, //BL
+        {glm::vec3(+halfWidth, -halfHeight, +halfDepth), color, glm::vec3(0,0,1), glm::vec2(1,0)}, //BR
+        {glm::vec3(+halfWidth, +halfHeight, +halfDepth), color, glm::vec3(0,0,1), glm::vec2(1,1)}, //TR
+        {glm::vec3(-halfWidth, +halfHeight, +halfDepth), color, glm::vec3(0,0,1), glm::vec2(0,1)}, //TL
+
+        //Back face
+        {glm::vec3(+halfWidth, -halfHeight, -halfDepth), color, glm::vec3(0,0,-1), glm::vec2(0,0)}, //BL
+        {glm::vec3(-halfWidth, -halfHeight, -halfDepth), color, glm::vec3(0,0,-1), glm::vec2(1,0)}, //BR
+        {glm::vec3(-halfWidth, +halfHeight, -halfDepth), color, glm::vec3(0,0,-1), glm::vec2(1,1)}, //TR
+        {glm::vec3(+halfWidth, +halfHeight, -halfDepth), color, glm::vec3(0,0,-1), glm::vec2(0,1)}, //TL
+
+        //Right face
+        {glm::vec3(+halfWidth, -halfHeight, +halfDepth), color, glm::vec3(1,0,0), glm::vec2(0,0)}, //BL
+        {glm::vec3(+halfWidth, -halfHeight, -halfDepth), color, glm::vec3(1,0,0), glm::vec2(1,0)}, //BR
+        {glm::vec3(+halfWidth, +halfHeight, -halfDepth), color, glm::vec3(1,0,0), glm::vec2(1,1)}, //TR
+        {glm::vec3(+halfWidth, +halfHeight, +halfDepth), color, glm::vec3(1,0,0), glm::vec2(0,1)}, //TL
+
+        //Left face
+        {glm::vec3(-halfWidth, -halfHeight, -halfDepth), color, glm::vec3(-1,0,0), glm::vec2(0,0)}, //BL
+        {glm::vec3(-halfWidth, -halfHeight, +halfDepth), color, glm::vec3(-1,0,0), glm::vec2(1,0)}, //BR
+        {glm::vec3(-halfWidth, +halfHeight, +halfDepth), color, glm::vec3(-1,0,0), glm::vec2(1,1)}, //TR
+        {glm::vec3(-halfWidth, +halfHeight, -halfDepth), color, glm::vec3(-1,0,0), glm::vec2(0,1)}, //TL
+
+        //Top face
+        {glm::vec3(-halfWidth, +halfHeight, +halfDepth), color, glm::vec3(0,1,0), glm::vec2(0,0)}, //BL
+        {glm::vec3(+halfWidth, +halfHeight, +halfDepth), color, glm::vec3(0,1,0), glm::vec2(1,0)}, //BR
+        {glm::vec3(+halfWidth, +halfHeight, -halfDepth), color, glm::vec3(0,1,0), glm::vec2(1,1)}, //TR
+        {glm::vec3(-halfWidth, +halfHeight, -halfDepth), color, glm::vec3(0,1,0), glm::vec2(0,1)}, //TL
+
+        //Bottom face
+        {glm::vec3(-halfWidth, -halfHeight, -halfDepth), color, glm::vec3(0,-1,0), glm::vec2(0,0)}, //BL
+        {glm::vec3(+halfWidth, -halfHeight, -halfDepth), color, glm::vec3(0,-1,0), glm::vec2(1,0)}, //BR
+        {glm::vec3(+halfWidth, -halfHeight, +halfDepth), color, glm::vec3(0,-1,0), glm::vec2(1,1)}, //TR
+        {glm::vec3(-halfWidth, -halfHeight, +halfDepth), color, glm::vec3(0,-1,0), glm::vec2(0,1)}, //TL
     };
-    meshData.vertices.assign(&vertices[0], &vertices[8]);
+    meshData->vertices.assign(&vertices[0], &vertices[24]);
 
     //INDICES
     //-------------
@@ -29,26 +109,26 @@ void generateCube(float size, glm::vec3 color, MeshData& meshData) {
         0, 2, 3,
 
         // back face
-        4, 6, 5,
-        4, 7, 6,
-
-        // left face
-        4, 5, 1,
-        4, 1, 0,
+        4, 5, 6,
+        6, 7, 4,
 
         // right face
-        3, 2, 6,
-        3, 6, 7,
+        8,  9, 10,
+        10, 11, 8,
 
-        // top face
-        1, 5, 6,
-        1, 6, 2,
+        //left face 
+        12, 13, 14,
+        14, 15, 12,
 
-        // bottom face
-        4, 0, 3,
-        4, 3, 7
+        //top face
+        16,17,18,
+        18,19,16,
+
+        //bottom face
+        20, 21, 22,
+        22, 23, 20
     };
-    meshData.indices.assign(&indices[0], &indices[36]);
+    meshData->indices.assign(&indices[0], &indices[36]);
 }
 
 void generateSphere(float radius, int numSlices, glm::vec3 color, MeshData& meshData) {

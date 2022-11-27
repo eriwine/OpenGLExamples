@@ -6,15 +6,22 @@
 
 struct Vec3 {
     float x, y, z;
+    Vec3() :x(0), y(0), z(0) {};
+    Vec3(float x, float y, float z) : x(x), y(y), z(z) {};
 };
 
 struct Vec4 {
     float x, y, z, w;
+    Vec4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {};
 };
 
 struct Vertex {
+    Vec3 position = Vec3(0,0,0);
+    Vec4 color = Vec4(1,1,1,1);
+};
+
+struct Particle {
     Vec3 position;
-    Vec4 color;
 };
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -28,6 +35,7 @@ const unsigned int VERTEX_STRIDE = 7;
 const unsigned int VERTEX_BUFFER_SIZE = NUM_PARTICLES * VERTEX_STRIDE;
 
 Vertex vertices[NUM_PARTICLES];
+Particle particles[NUM_PARTICLES];
 
 float deltaTime, lastFrameTime;
 

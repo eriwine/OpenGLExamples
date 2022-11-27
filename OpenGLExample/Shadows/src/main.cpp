@@ -44,16 +44,18 @@ bool firstMouse = true;
 Camera camera = Camera(glm::vec3(0), glm::vec3(0, 0, 1.0f), 60.0f, (float)SCR_WIDTH / SCR_HEIGHT);
 FlyCamera cameraController = FlyCamera(&camera, 5.0f);
 
-//Geometry
-GLuint skyboxVAO;
-GLuint cubeVAO;
-GLuint planeVAO;
-GLuint quadVAO;
-
 //Textures
 GLuint skyboxTexture;
 GLuint wallTexture;
 GLuint grassTexture;
+
+//Geometry
+MeshData* cubeMesh;
+Primitive* cubeRenderer;
+MeshData* planeMesh;
+Primitive* planeRenderer;
+MeshData* quadMesh;
+Primitive* quadRenderer;
 
 int main()
 {
@@ -91,7 +93,7 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
 
     Shader skyboxShader = Shader("shaders/skybox.vert", "shaders/skybox.frag");
 
@@ -112,12 +114,20 @@ int main()
 
     skyboxTexture = loadCubemap(faces);
     wallTexture = loadTexture("textures/wall.jpg");
-    grassTexture = loadTexture("textures/grass.jpg");
+    grassTexture = loadTexture("textures/Grass_Color.jpg");
 
-    skyboxVAO = createSkyboxVAO();
-    cubeVAO = createCubeVAO();
-    planeVAO = createPlaneVAO();
-    quadVAO = createQuadVAO();
+    //Create geometry
+    cubeMesh = new MeshData();
+    createCube(1.0f, 1.0f, 1.0f, glm::vec3(1.0f), cubeMesh);
+    cubeRenderer = new Primitive(cubeMesh);
+
+    planeMesh = new MeshData();
+    createPlane(1.0f, 1.0f, glm::vec3(1.0f), planeMesh);
+    planeRenderer = new Primitive(planeMesh);
+
+    quadMesh = new MeshData();
+    createQuad(2.0f, 2.0f, glm::vec3(1.0f), quadMesh);
+    quadRenderer = new Primitive(quadMesh);
 
     //Create depth buffer
     GLuint depthMapFBO;
@@ -218,12 +228,11 @@ int main()
         }
 
         //Draw light position as cube
-        glBindVertexArray(cubeVAO);
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, lightPos);
         model = glm::scale(model, glm::vec3(0.2f));
         litShader.setMat4("u_model", model);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        cubeRenderer->Draw();
 
         //Draw skybox
         {
@@ -237,11 +246,7 @@ int main()
             skyboxShader.setMat4("u_view", glm::mat4(glm::mat3(camera.GetViewMatrix())));
             skyboxShader.setMat4("u_projection", camera.GetProjectionMatrix());
 
-            glBindVertexArray(skyboxVAO);
-
-            int size;
-            glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
-            glDrawElements(GL_TRIANGLES, size / sizeof(GLushort), GL_UNSIGNED_SHORT, 0);
+            cubeRenderer->Draw();
         }
 
 
@@ -251,7 +256,7 @@ int main()
             glCullFace(GL_BACK);
 
             debugDepthShader.use();
-            debugDepthShader.setFloat("near_plane", 1.0f);
+            debugDepthShader.setFloat("near_plane", 0.01f);
             debugDepthShader.setFloat("far_plane", 15.0f);
 
             glm::vec3 scale = glm::vec3(0.25f);
@@ -261,8 +266,7 @@ int main()
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, depthTexture);
 
-            glBindVertexArray(quadVAO);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            quadRenderer->Draw();
         }
        
 
@@ -280,9 +284,7 @@ void renderScene(const Shader& shader, float currentTime)
 
     glDepthFunc(GL_LESS);
 
-  
     //Draw cubes
-    glBindVertexArray(cubeVAO);
     shader.setVec2("u_tile", glm::vec2(0.5f));
 
     //Spinning cube 1 
@@ -291,7 +293,7 @@ void renderScene(const Shader& shader, float currentTime)
     model = glm::rotate(model, currentTime * 0.2f, glm::vec3(-0.5, 0.2f, 0.0f));
     model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
     shader.setMat4("u_model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    cubeRenderer->Draw();
 
     //Spinning cube 2
     model = glm::mat4(1.0f);
@@ -299,7 +301,7 @@ void renderScene(const Shader& shader, float currentTime)
     model = glm::rotate(model, currentTime * 0.4f, glm::vec3(0.0, 0.2f, 0.5f));
     model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
     shader.setMat4("u_model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    cubeRenderer->Draw();
 
     //Spinning cube 3
     model = glm::mat4(1.0f);
@@ -307,7 +309,7 @@ void renderScene(const Shader& shader, float currentTime)
     model = glm::rotate(model, currentTime * 0.3f, glm::vec3(0.0, 0.2f, 0.5f));
     model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
     shader.setMat4("u_model", model);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    cubeRenderer->Draw();
 
     //Wall 1
     model = glm::mat4(1.0f);
@@ -316,7 +318,7 @@ void renderScene(const Shader& shader, float currentTime)
     shader.setMat4("u_model", model);
     shader.setVec2("u_tile", glm::vec2(2.0f));
 
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    cubeRenderer->Draw();
 
     //Wall 2
     model = glm::mat4(1.0f);
@@ -325,7 +327,8 @@ void renderScene(const Shader& shader, float currentTime)
     shader.setMat4("u_model", model);
     shader.setVec2("u_tile", glm::vec2(2.0f,3.0f));
 
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    //glDrawArrays(GL_TRIANGLES, 0, 36);
+    cubeRenderer->Draw();
 
     //Ground plane
     model = glm::mat4(1.0f);
@@ -335,10 +338,7 @@ void renderScene(const Shader& shader, float currentTime)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, grassTexture);
     shader.setInt("u_texture", 0);
-    glBindVertexArray(planeVAO);
-    int size;
-    glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
-    glDrawElements(GL_TRIANGLES, size / sizeof(GLushort), GL_UNSIGNED_SHORT, 0);
+    planeRenderer->Draw();
 }
 
 float getInputAxis(GLFWwindow* window, int positiveButton, int negativeButton) {
@@ -434,195 +434,6 @@ unsigned int loadCubemap(std::vector<std::string> faces)
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     }
     return textureID;
-}
-
-unsigned int createPlaneVAO() {
-    float vertices[] = {
-         //x   y      z     nx    ny    nz    s      t 
-        -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, //bottom left
-        +1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, //bottom right
-        +1.0f, 0.0f, +1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, //top right
-        -1.0f, 0.0f, +1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, //top left
-    };
-    GLushort indices[] = {
-        0, 2, 1,
-        0, 3, 2
-    };
-    unsigned int VAO;
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-    unsigned int VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    unsigned int EBO;
-    glGenBuffers(1, &EBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
-
-    return VAO;
-}
-
-unsigned int createQuadVAO()
-{
-    unsigned int quadVAO;
-
-    float quadVertices[] = {
-        // positions        // texture Coords
-        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-         1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
-         1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-    };
-    // setup plane VAO
-    glGenVertexArrays(1, &quadVAO);
-    glBindVertexArray(quadVAO);
-
-    unsigned int quadVBO;
-    glGenBuffers(1, &quadVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    return quadVAO;
-}
-
-
-
-unsigned int createCubeVAO()
-{
-    float cubeVertices[] = {
-    //x      y       z     nx     ny     nz   s      t     
-    //Front face 
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
-     0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f,
-    //Back face
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  0.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  1.0f, 1.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,  0.0f, 0.0f,
-    //Right face
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-    -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-    //Left face
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-     0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f,
-     //Bottom face
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-     0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-     0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-    -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f,
-    -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-    //Top face
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-     0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-     0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-    -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f,
-    -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f, 1.0f
-    };
-
-    unsigned int VAO;
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-    unsigned int VBO;
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)0);
-
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 3));
-
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 8, (void*)(sizeof(float) * 6));
-
-    return VAO;
-}
-
-unsigned int createSkyboxVAO()
-{
-    GLfloat cubeVertices[] = {
-        // front
-        -1.0, -1.0,  1.0,
-         1.0, -1.0,  1.0,
-         1.0,  1.0,  1.0,
-        -1.0,  1.0,  1.0,
-        // back
-        -1.0, -1.0, -1.0,
-         1.0, -1.0, -1.0,
-         1.0,  1.0, -1.0,
-        -1.0,  1.0, -1.0
-    };
-    GLushort cubeIndices[] = {
-        // front
-        0, 1, 2,
-        2, 3, 0,
-        // right
-        1, 5, 6,
-        6, 2, 1,
-        // back
-        7, 6, 5,
-        5, 4, 7,
-        // left
-        4, 0, 3,
-        3, 7, 4,
-        // bottom
-        4, 5, 1,
-        1, 0, 4,
-        // top
-        3, 2, 6,
-        6, 7, 3
-    };
-   
-    unsigned int skyboxVAO;
-    glGenVertexArrays(1, &skyboxVAO);
-    glBindVertexArray(skyboxVAO);
-
-    unsigned int skyboxVBO;
-    glGenBuffers(1, &skyboxVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
-
-    unsigned int skyboxEBO;
-    glGenBuffers(1, &skyboxEBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
-    return skyboxVAO;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)

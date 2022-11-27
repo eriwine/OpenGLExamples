@@ -16,6 +16,7 @@ public:
 		return glm::lookAt(m_position, m_position + m_forward, m_up);
 	}
 	glm::mat4 GetProjectionMatrix() {
+		return glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, m_nearPlane, m_farPlane);
 		return glm::perspective(glm::radians(m_fov), m_aspectRatio, m_nearPlane, m_farPlane);
 	}
 	inline void SetFov(float fov) { m_fov = fov; }
